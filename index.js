@@ -10,7 +10,7 @@ const POS_KEY    = 'sp-pos';
 const SIZE_KEY    = 'sp-size';
 const FAB_KEY     = 'sp-fab-show';
 
-// view: 'user' | 'char'   charName: tên nhân vật đã xác nhận
+// view: 'user' (người dùng) | 'char' (nhân vật)   charName: tên nhân vật đã xác nhận
 function getCacheKey(view, charName) {
     const chatId = getContext().chatId;
     if (!chatId) return null;
@@ -26,7 +26,7 @@ function loadCachedForCurrentChat(view, charName) {
     try {
         const saved = JSON.parse(localStorage.getItem(key) || 'null');
         if (saved?.raw) return renderSchedule(saved.raw, saved.userName || 'Người dùng', view ?? currentView);
-    } catch { /* bỏ qua cache bị hỏng */ }
+    } catch { /* bỏ qua bộ nhớ đệm bị lỗi */ }
     return null;
 }
 
@@ -40,7 +40,7 @@ let resizeRAF      = null;
 let fabDragged     = false;
 let fabDragState   = null;
 let currentView        = 'user';  // 'user' | 'char'
-let charViewName       = null;    // tên nhân vật đã xác nhận; được bảo lưu khi chuyển sang chế độ xem user
+let charViewName       = null;    // tên nhân vật đã xác nhận; được bảo lưu khi chuyển sang chế độ xem người dùng
 let outlineMode         = false;
 let isGeneratingOutline = false;
 let cachedOutline       = null;
@@ -62,7 +62,7 @@ jQuery(async () => {
     injectModal();
     injectFab();
     injectToastContainer();
-    // Đặt lại trạng thái hiển thị và tải lại cache khi đổi cuộc trò chuyện
+    // Đặt lại trạng thái chế độ xem và tải lại bộ nhớ đệm khi đổi cuộc trò chuyện
     eventSource.on(event_types.CHAT_CHANGED, () => {
         currentView  = 'user';
         charViewName = null;
@@ -78,7 +78,7 @@ jQuery(async () => {
             $(`#${MODAL_ID} .sp-outline-btn`).removeClass('sp-btn-active');
             $('#sp-chat-msgs').empty();
             if (cachedSchedule) setBody(cachedSchedule);
-            else setBody(`<div class="sp-empty"><i class="fa-regular fa-calendar"></i><p>Hiện chưa có lịch trình, nhấp vào góc dưới bên phải để tạo</p></div>`);
+            else setBody(`<div class="sp-empty"><i class="fa-regular fa-calendar"></i><p>Chưa có lịch trình, nhấn nút góc dưới bên phải để tạo</p></div>`);
         }
     });
     window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
@@ -86,7 +86,7 @@ jQuery(async () => {
     });
 });
 
-// ─── Hàm hỗ trợ cấu hình ───────────────────────────────────────────────────────────
+// ─── Trình hỗ trợ cấu hình ───────────────────────────────────────────────────────────
 
 function loadCfg() { try { return JSON.parse(localStorage.getItem(API_KEY)) || {}; } catch { return {}; } }
 function saveCfg(c) { localStorage.setItem(API_KEY, JSON.stringify(c)); }
@@ -99,7 +99,7 @@ function injectExtButton() {
     const html = `
         <div id="${PLUGIN_ID}-settings" class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <b>Bảng lịch trình</b>
+                <b>Lịch trình</b>
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
@@ -119,8 +119,8 @@ function injectExtButton() {
 
     const wandHtml = `
         <div id="sp_open_wand" class="list-group-item flex-container flexGap5">
-            <div class="fa-solid fa-calendar-days extensionsMenuExtensionButton" title="Mở bảng lịch trình"></div>
-            <span>Bảng lịch trình</span>
+            <div class="fa-solid fa-calendar-days extensionsMenuExtensionButton" title="Mở lịch trình"></div>
+            <span>Lịch trình</span>
         </div>`;
 
     function mountWandBtn() {
@@ -166,7 +166,7 @@ function injectFab() {
         ? `left:${savedPos.left}px;top:${savedPos.top}px;right:auto;bottom:auto;`
         : '';
     const html = `<div id="${FAB_ID}" style="position:fixed;z-index:2000000;${posStyle}${fabEnabled() ? '' : 'display:none'}">
-        <button class="sp-fab-btn sp-${currentTheme}" title="Bảng lịch trình"
+        <button class="sp-fab-btn sp-${currentTheme}" title="Lịch trình"
             style="width:44px;height:44px;border-radius:50%;background:#3a3648;color:#d0bcff;border:1.5px solid rgba(208,188,255,0.35);display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.5);transform:translateZ(0);clip:auto;">
             <i class="fa-solid fa-calendar-days"></i>
         </button>
@@ -253,7 +253,7 @@ function onFabDragEnd() {
     fabDragState = null;
     $(document).off('mousemove.fabdrag mouseup.fabdrag');
     document.removeEventListener('touchmove', onFabTouchMove);
-    document.removeEventListener('touchend', onFabDragEnd);
+    document.removeEventListener('touchend',  onFabDragEnd);
 }
 
 function injectModal() {
@@ -273,7 +273,7 @@ function injectModal() {
                     <div class="sp-topbar-actions">
                         <button class="sp-icon-btn sp-maximize-btn" title="Toàn màn hình"><i class="fa-solid fa-expand"></i></button>
                         <button class="sp-icon-btn sp-settings-btn" title="Cài đặt"><i class="fa-solid fa-gear"></i></button>
-                        <button class="sp-icon-btn sp-theme-btn"    title="Đổi giao diện"><i class="fa-solid fa-circle-half-stroke"></i></button>
+                        <button class="sp-icon-btn sp-theme-btn"    title="Đổi chủ đề"><i class="fa-solid fa-circle-half-stroke"></i></button>
                         <button class="sp-icon-btn sp-regen-btn"    title="Tạo lại"><i class="fa-solid fa-rotate-right"></i></button>
                         <button class="sp-icon-btn sp-close-btn"    title="Đóng"><i class="fa-solid fa-xmark"></i></button>
                     </div>
@@ -283,10 +283,10 @@ function injectModal() {
                     <div class="sp-api-notice ${hasCustomApi ? 'sp-notice-ok' : 'sp-notice-warn'}">
                         <i class="fa-solid ${hasCustomApi ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i>
                         ${hasCustomApi
-                            ? 'Đã cấu hình API độc lập, quá trình tạo chạy ngầm không ảnh hưởng đến trò chuyện'
-                            : 'Chưa cấu hình API độc lập: Quá trình tạo sẽ <b>chiếm dụng kênh trò chuyện</b>, không thể chat cùng lúc'}
+                            ? 'Đã cấu hình API riêng, việc tạo ngầm không ảnh hưởng đến trò chuyện'
+                            : 'Chưa cấu hình API riêng: Trong lúc tạo sẽ <b>chiếm dụng kênh chat</b>, không thể trò chuyện đồng thời'}
                     </div>
-                    <p class="sp-cfg-hint">API tùy chỉnh (để trống để sử dụng model hiện tại của SillyTavern)</p>
+                    <p class="sp-cfg-hint">API tùy chỉnh (để trống nếu dùng mô hình hiện tại của quán)</p>
                     <input id="sp-cfg-url"   class="sp-input" type="url"
                            placeholder="Base URL, ví dụ https://api.openai.com/v1"
                            value="${escapeAttr(cfg.url || '')}">
@@ -297,9 +297,9 @@ function injectModal() {
                     </div>
                     <div class="sp-model-row">
                         <input id="sp-cfg-model" class="sp-input sp-model-input" type="text"
-                               placeholder="Tên model, ví dụ gpt-4o-mini"
+                               placeholder="Tên mô hình, ví dụ gpt-4o-mini"
                                value="${escapeAttr(cfg.model || '')}">
-                        <button id="sp-fetch-models" class="sp-fetch-btn" title="Lấy danh sách model">
+                        <button id="sp-fetch-models" class="sp-fetch-btn" title="Lấy danh sách mô hình">
                             <i class="fa-solid fa-list"></i>
                         </button>
                     </div>
@@ -321,7 +321,7 @@ function injectModal() {
                     <div class="sp-outline-chat" id="sp-outline-chat">
                         <div class="sp-chat-msgs" id="sp-chat-msgs"></div>
                         <div class="sp-chat-input-row">
-                            <input type="text" id="sp-chat-input" class="sp-input" placeholder="Thảo luận đề cương với AI...">
+                            <input type="text" id="sp-chat-input" class="sp-input" placeholder="Thảo luận đề cương với AI…">
                             <button id="sp-chat-send" class="sp-icon-btn" title="Gửi"><i class="fa-solid fa-paper-plane"></i></button>
                         </div>
                     </div>
@@ -343,7 +343,7 @@ function injectModal() {
     $(`#${MODAL_ID} .sp-settings-btn`).on('click', toggleSettings);
     $(`#${MODAL_ID} .sp-backdrop`).on('click',     closePanel);
 
-    // Outline chat
+    // Trò chuyện về đề cương
     function doSendChat() {
         const msg = $('#sp-chat-input').val().trim();
         if (msg && !isOutlineChatting) { $('#sp-chat-input').val(''); sendOutlineChat(msg); }
@@ -357,11 +357,11 @@ function injectModal() {
         if (text) injectToST(text);
     });
 
-    // Các nút Hủy bỏ (ủy quyền sự kiện)
+    // Các nút hủy (ủy quyền sự kiện)
     $('#sp-body').on('click', '#sp-abort-generate', () => scheduleAbortController?.abort());
     $('#sp-outline-beats').on('click', '#sp-abort-outline', () => outlineAbortController?.abort());
 
-    // Chuyển đổi giao diện: Tôi / TA / Đề cương
+    // Chuyển đổi chế độ xem: Tôi / TA / Đề cương
     $(`#${MODAL_ID} .sp-view-toggle`).on('click', '.sp-view-btn', function () {
         if (isGenerating) return;
         const view = $(this).data('view');
@@ -378,7 +378,7 @@ function injectModal() {
             return;
         }
 
-        // Rời khỏi chế độ outline
+        // Thoát khỏi chế độ đề cương
         let wasOutline = false;
         if (outlineMode) {
             outlineMode = false;
@@ -423,7 +423,7 @@ function injectModal() {
     $('#sp-resize-handle').on('mousedown', onResizeStart);
     document.getElementById('sp-resize-handle').addEventListener('touchstart', onResizeStart, { passive: false });
 
-    // Kéo giãn dải phân cách Outline
+    // Kéo thanh chia đề cương
     let divState = null;
     const divEl  = document.getElementById('sp-outline-divider');
     const chatEl = document.getElementById('sp-outline-chat');
@@ -458,7 +458,7 @@ function injectModal() {
     restoreOutlineChatHeight();
 }
 
-// ─── Giao diện (Tôi / TA) ───────────────────────────────────────────────────────────
+// ─── Chế độ xem (Tôi / TA) ───────────────────────────────────────────────────────────
 
 function onRegenClick() {
     if (outlineMode) {
@@ -467,22 +467,21 @@ function onRegenClick() {
     }
     if (isGenerating) return;
     if (currentView === 'char') {
-        // Xóa cache của nhân vật và hiển thị lại bộ chọn để người dùng có thể chọn nhân vật khác.
-        // Lưu lại tên trước - switchToCharView sẽ đọc charViewName để điền sẵn.
+        // Xóa bộ nhớ đệm nhân vật và hiển thị lại trình chọn để người dùng chọn nhân vật khác.
         const key = getCacheKey();
         if (key) localStorage.removeItem(key);
         cachedSchedule = null;
-        switchToCharView();   // điền sẵn charViewName hiện tại (hoặc đoán)
-        charViewName   = null; // xóa sau khi bộ chọn được render
+        switchToCharView();   // điền trước với charViewName hiện tại
+        charViewName   = null; // xóa sau khi trình chọn được hiển thị
     } else {
         triggerGenerate();
     }
 }
 
 function guessCharName(ctx) {
-    // Ưu tiên 1: tên thẻ nhân vật
+    // Ưu tiên 1: tên trên thẻ nhân vật
     if (ctx.name2) return ctx.name2;
-    // Ưu tiên 2: mẫu "Name:" xuất hiện nhiều nhất trong các tin nhắn AI gần đây
+    // Ưu tiên 2: mẫu "Tên:" xuất hiện thường xuyên nhất trong các tin nhắn AI gần đây
     const NOISE = new Set(['series','chapter','note','summary','part','vol','act','scene',
                            'title','author','narrator','system','user','assistant','ai']);
     const msgs = (ctx.chat || []).filter(m => !m.is_user).slice(-20);
@@ -514,20 +513,20 @@ function setView(view, charName) {
 function switchToCharView() {
     currentView = 'char';
     const ctx     = getContext();
-    // Ưu tiên tên đã được xác nhận trước đó; nếu không sẽ thử đoán từ tin nhắn trò chuyện
+    // Ưu tiên tên đã xác nhận trước đó; nếu không thì đoán từ tin nhắn chat
     const guessed = charViewName || guessCharName(ctx);
     setBody(`<div class="sp-char-picker">
-        <p class="sp-char-picker-hint"><i class="fa-solid fa-user-pen"></i> Nhập tên nhân vật muốn xem lịch trình</p>
+        <p class="sp-char-picker-hint"><i class="fa-solid fa-user-pen"></i> Nhập tên nhân vật bạn muốn xem lịch trình</p>
         <div class="sp-char-picker-row">
             <input id="sp-char-name-input" class="sp-input" type="text"
                    placeholder="Tên nhân vật" value="${escapeAttr(guessed)}">
             <button id="sp-char-name-confirm" class="sp-save-btn">Xác nhận</button>
         </div>
-        ${guessed ? `<p class="sp-char-picker-sub">Điền sẵn theo đoạn hội thoại gần đây, có thể chỉnh sửa trực tiếp</p>` : ''}
+        ${guessed ? `<p class="sp-char-picker-sub">Đã điền trước dựa trên hội thoại gần đây, có thể sửa trực tiếp</p>` : ''}
     </div>`);
     $('.sp-view-btn').removeClass('sp-view-active');
     $(`.sp-view-btn[data-view="char"]`).addClass('sp-view-active');
-    // .off().on() ngăn chặn việc liên kết trùng lặp khi gọi nhiều lần
+    
     $('#sp-char-name-input').off('keydown.charview').on('keydown.charview', e => { if (e.key === 'Enter') confirmCharView(); });
     $('#sp-char-name-confirm').off('click.charview').on('click.charview', confirmCharView);
     setTimeout(() => { $('#sp-char-name-input').focus().select(); }, 50);
@@ -540,7 +539,7 @@ function confirmCharView() {
     if (cachedSchedule) {
         setBody(cachedSchedule);
     } else {
-        setBody(`<div class="sp-loading"><div class="sp-spinner"></div><p class="sp-loading-text">Đang lập kế hoạch...</p><button class="sp-abort-btn" id="sp-abort-generate"><i class="fa-solid fa-stop"></i>Hủy tạo</button></div>`);
+        setBody(`<div class="sp-loading"><div class="sp-spinner"></div><p class="sp-loading-text">Đang lập kế hoạch…</p><button class="sp-abort-btn" id="sp-abort-generate"><i class="fa-solid fa-stop"></i>Hủy tạo</button></div>`);
         if (!isGenerating) {
             isGenerating = true;
             setExtBtnState('generating');
@@ -554,7 +553,7 @@ function confirmCharView() {
 function openSchedule() {
     showPanel();
     if (isGenerating) {
-        setBody(`<div class="sp-loading"><div class="sp-spinner"></div><p class="sp-loading-text">Đang lập kế hoạch...</p><button class="sp-abort-btn" id="sp-abort-generate"><i class="fa-solid fa-stop"></i>Hủy tạo</button></div>`);
+        setBody(`<div class="sp-loading"><div class="sp-spinner"></div><p class="sp-loading-text">Đang lập kế hoạch…</p><button class="sp-abort-btn" id="sp-abort-generate"><i class="fa-solid fa-stop"></i>Hủy tạo</button></div>`);
     } else if (cachedSchedule) {
         setBody(cachedSchedule);
     } else {
@@ -573,7 +572,6 @@ function showEmptyGenerate() {
 function showPanel() {
     const $root  = $(`#${MODAL_ID}`);
     const sheet  = document.querySelector(`#${MODAL_ID} .sp-sheet`);
-    // Xóa hoạt ảnh inline để CSS open-animation phát lại mỗi lần hiển thị
     if (sheet) sheet.style.animation = '';
     $root.stop(true).css({ display: 'block', opacity: 0 })
          .animate({ opacity: 1 }, 180);
@@ -591,7 +589,7 @@ function closePanel() {
 
 function setBody(html) { $('#sp-body').html(html); }
 
-// ─── Quá trình tạo ───────────────────────────────────────────────────────────────
+// ─── Quá trình tạo (Generation) ───────────────────────────────────────────────────────────────
 
 function triggerGenerate() {
     if (isGenerating) return;
@@ -601,12 +599,11 @@ function triggerGenerate() {
     isGenerating = true;
     setExtBtnState('generating');
     if (!$(`#${MODAL_ID}`).is(':visible')) showPanel();
-    setBody(`<div class="sp-loading"><div class="sp-spinner"></div><p class="sp-loading-text">Đang lập kế hoạch...</p><button class="sp-abort-btn" id="sp-abort-generate"><i class="fa-solid fa-stop"></i>Hủy tạo</button></div>`);
+    setBody(`<div class="sp-loading"><div class="sp-spinner"></div><p class="sp-loading-text">Đang lập kế hoạch…</p><button class="sp-abort-btn" id="sp-abort-generate"><i class="fa-solid fa-stop"></i>Hủy tạo</button></div>`);
     runGenerate();
 }
 
 async function runGenerate() {
-    // Lưu trạng thái view — người dùng có thể đổi view khi request đang thực hiện
     const viewSnap = currentView;
     const charSnap = charViewName;
     scheduleAbortController = new AbortController();
@@ -631,9 +628,9 @@ async function runGenerate() {
         if (stillOnView) {
             cachedSchedule = html;
             if ($(`#${MODAL_ID}`).is(':visible')) setBody(html);
-            else showToast('Đã tạo lịch trình, nhấp để xem', () => { showPanel(); setBody(html); });
+            else showToast('Đã tạo lịch trình, nhấn để xem', () => { showPanel(); setBody(html); });
         } else {
-            showToast('Đã tạo lịch trình, nhấp để xem', () => {
+            showToast('Đã tạo lịch trình, nhấn để xem', () => {
                 setView(viewSnap, charSnap);
                 cachedSchedule = html;
                 showPanel();
@@ -659,7 +656,7 @@ async function generate(ctx, userName, charName, perspective = 'user', signal = 
     const cfg = loadCfg();
     if (!cfg.url || !cfg.key) {
         if (!settingsOpen) toggleSettings();
-        throw new Error('Vui lòng điền URL và Key của API tùy chỉnh trong phần cài đặt trước');
+        throw new Error('Vui lòng điền URL và Key của API tùy chỉnh trong phần cài đặt');
     }
     const prompt = buildPrompt(userName, charName, perspective);
     return callCustomApi(ctx, prompt, cfg, userName, charName, signal);
@@ -679,7 +676,7 @@ async function callCustomApi(ctx, prompt, cfg, userName, charName, signal = null
 
 async function buildWorldInfoContext(ctx) {
     const parts = [];
-    // 1. Lorebook tích hợp trong thẻ nhân vật (character_book)
+    // 1. Sách thế giới tích hợp trong thẻ nhân vật (character_book)
     const char = ctx.characters?.[ctx.characterId] ?? {};
     const charBook = char.data?.character_book;
     if (charBook?.entries?.length) {
@@ -687,13 +684,13 @@ async function buildWorldInfoContext(ctx) {
             .filter(e => !e.disabled)
             .map(e => e.content)
             .filter(Boolean);
-        if (entries.length) parts.push(`【Worldbook của nhân vật】\n${entries.join('\n\n')}`);
+        if (entries.length) parts.push(`【Sách thế giới của nhân vật】\n${entries.join('\n\n')}`);
     }
-    // 2. Worldbook được kích hoạt toàn cục (ngân sách lớn nhất có thể để chứa tất cả các mục)
+    // 2. Sách thế giới được kích hoạt toàn cục
     try {
         const wiData = await ctx.getWorldInfoPrompt(ctx.chat ?? [], 999999, true);
-        if (wiData?.worldInfoString) parts.push(`【Worldbook】\n${wiData.worldInfoString}`);
-    } catch { /* bỏ qua */ }
+        if (wiData?.worldInfoString) parts.push(`【Sách thế giới】\n${wiData.worldInfoString}`);
+    } catch { /* ignore */ }
     return parts.join('\n\n');
 }
 
@@ -701,15 +698,14 @@ async function buildMessages(ctx, prompt, userName, charName) {
     const char = ctx.characters?.[ctx.characterId] ?? {};
     const wiContext = await buildWorldInfoContext(ctx);
     const sys  = [
-        `Bạn là một người quan sát và trợ lý phân tích tường thuật, chịu trách nhiệm phân tích câu chuyện giữa ${userName} và ${charName} dưới góc nhìn thứ ba.`,
-        `Không đóng vai bất kỳ nhân vật nào, không sử dụng ngôi thứ nhất. Tất cả đầu ra phải được tường thuật ở ngôi thứ ba.`,
+        `Bạn là một trợ lý phân tích tự sự và người quan sát, có nhiệm vụ phân tích câu chuyện giữa ${userName} và ${charName} từ góc nhìn ngôi thứ ba.`,
+        `Không đóng vai bất kỳ nhân vật nào, không sử dụng ngôi thứ nhất. Mọi đầu ra phải là lời kể ở ngôi thứ ba.`,
         char.description ? `【Thông tin bối cảnh của ${charName}】\n${char.description}` : '',
         char.personality ? `【Tính cách】${char.personality}` : '',
-        char.scenario    ? `【Bối cảnh】${char.scenario}`    : '',
+        char.scenario    ? `【Kịch bản】${char.scenario}`    : '',
         wiContext,
     ].filter(Boolean).join('\n\n');
-    // Chỉ lấy 10 phản hồi gần nhất của AI (+ tin nhắn người dùng tương ứng của chúng) để tránh
-    // bị neo vào các mốc ngày tháng từ giai đoạn đầu của cuộc trò chuyện.
+    
     const allMsgs = ctx.chat ?? [];
     let aiCount = 0;
     let startIdx = allMsgs.length;
@@ -724,7 +720,7 @@ async function buildMessages(ctx, prompt, userName, charName) {
     return [{ role: 'system', content: sys }, ...history, { role: 'user', content: prompt }];
 }
 
-// ─── Hàm hỗ trợ bộ nhớ đệm (Cache) Outline ────────────────────────────────────────────────────
+// ─── Trình hỗ trợ bộ nhớ đệm đề cương ────────────────────────────────────────────────────
 
 function getOutlineCacheKey(view, charName) {
     const chatId = getContext().chatId;
@@ -741,26 +737,26 @@ function loadCachedOutlineForCurrentChat(view, charName) {
     try {
         const saved = JSON.parse(localStorage.getItem(key) || 'null');
         if (saved?.raw) return renderOutline(saved.raw);
-    } catch { /* bỏ qua */ }
+    } catch { /* ignore */ }
     return null;
 }
 
-// ─── Chèn (Inject) ───────────────────────────────────────────────────────────────────
+// ─── Tiêm nội dung (Inject) ───────────────────────────────────────────────────────────────────
 
 function makeInjectBtn(text) {
     const id = ++_injectIdSeq;
     _injectTexts[id] = text;
-    return `<button class="sp-inject-btn" data-iid="${id}" title="Chèn vào khung nhập liệu"><i class="fa-solid fa-arrow-right-to-bracket"></i></button>`;
+    return `<button class="sp-inject-btn" data-iid="${id}" title="Tiêm vào khung nhập"><i class="fa-solid fa-arrow-right-to-bracket"></i></button>`;
 }
 
 function injectToST(text) {
     const $ta = $('#send_textarea');
     if (!$ta.length) { showToast('Không tìm thấy khung nhập liệu', null, true); return; }
     $ta.val(text).trigger('input');
-    showToast('Đã chèn vào khung nhập liệu');
+    showToast('Đã tiêm vào khung nhập');
 }
 
-// ─── Chat Đề cương ─────────────────────────────────────────────────────────────
+// ─── Chat đề cương ─────────────────────────────────────────────────────────────
 
 function appendChatMsg(role, content) {
     const display = content.replace(/<outline_widget[\s\S]*?<\/outline_widget>/gi, '[↑ Đã tạo đề cương mới]');
@@ -781,11 +777,11 @@ async function buildOutlineChatMessages(userMsg) {
         const key  = getOutlineCacheKey();
         const saved = key && JSON.parse(localStorage.getItem(key) || 'null');
         if (saved?.raw) outlineCtx = `\nĐề cương hiện tại:\n${saved.raw}\n`;
-    } catch { /* bỏ qua */ }
+    } catch { /* ignore */ }
     const wiContext = await buildWorldInfoContext(ctx);
-    const sys = [`Bạn là cố vấn sáng tác truyện, đang giúp người dùng hoàn thiện đề cương cốt truyện giữa ${userName} và ${charName}.${outlineCtx}`,
+    const sys = [`Bạn là một cố vấn sáng tác câu chuyện, đang giúp người dùng hoàn thiện đề cương câu chuyện giữa ${userName} và ${charName}. ${outlineCtx}`,
         wiContext,
-        `Vui lòng trả lời với tư cách là cố vấn sáng tác, không đóng vai bất kỳ nhân vật nào. Nếu người dùng yêu cầu sửa đổi đề cương, hãy xuất đề cương mới hoàn chỉnh ở cuối câu trả lời (định dạng hoàn toàn giống với đề cương gốc, được bọc bằng <outline_widget>...</outline_widget>).`,
+        `Hãy trả lời với tư cách là cố vấn sáng tác, không đóng vai bất kỳ nhân vật nào. Nếu người dùng yêu cầu sửa đổi đề cương, hãy xuất đề cương mới đầy đủ ở cuối câu trả lời (định dạng giống hệt đề cương cũ, bọc trong thẻ <outline_widget>...</outline_widget>).`,
     ].filter(Boolean).join('\n');
     return [{ role: 'system', content: sys }, ...outlineChatHistory, { role: 'user', content: userMsg }];
 }
@@ -800,7 +796,7 @@ async function sendOutlineChat(userMsg) {
     if (el) el.scrollTop = el.scrollHeight;
     try {
         const cfg = loadCfg();
-        if (!cfg.url || !cfg.key) { if (!settingsOpen) toggleSettings(); throw new Error('Vui lòng điền URL và Key trước'); }
+        if (!cfg.url || !cfg.key) { if (!settingsOpen) toggleSettings(); throw new Error('Vui lòng cấu hình API'); }
         const res = await fetch(`${cfg.url}/chat/completions`, {
             method : 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.key}` },
@@ -833,8 +829,6 @@ async function sendOutlineChat(userMsg) {
     isOutlineChatting = false;
 }
 
-
-
 function toggleOutlineMode() {
     outlineMode = !outlineMode;
     $('.sp-view-btn').removeClass('sp-view-active');
@@ -853,7 +847,7 @@ function toggleOutlineMode() {
 
 function setOutlineBody(html) { $('#sp-outline-beats').html(html); }
 
-// ─── Quá trình tạo Đề cương ───────────────────────────────────────────────────────
+// ─── Tạo đề cương ───────────────────────────────────────────────────────
 
 function triggerGenerateOutline() {
     if (isGeneratingOutline) return;
@@ -861,7 +855,7 @@ function triggerGenerateOutline() {
     if (key) localStorage.removeItem(key);
     cachedOutline = null;
     isGeneratingOutline = true;
-    setOutlineBody(`<div class="sp-loading"><div class="sp-spinner"></div><p class="sp-loading-text">Đang phác thảo đề cương...</p><button class="sp-abort-btn" id="sp-abort-outline"><i class="fa-solid fa-stop"></i>Hủy tạo</button></div>`);
+    setOutlineBody(`<div class="sp-loading"><div class="sp-spinner"></div><p class="sp-loading-text">Đang phác thảo đề cương…</p><button class="sp-abort-btn" id="sp-abort-outline"><i class="fa-solid fa-stop"></i>Hủy tạo</button></div>`);
     runGenerateOutline();
 }
 
@@ -876,7 +870,7 @@ async function runGenerateOutline() {
         const cfg = loadCfg();
         if (!cfg.url || !cfg.key) {
             if (!settingsOpen) toggleSettings();
-            throw new Error('Vui lòng điền URL và Key của API tùy chỉnh trong phần cài đặt trước');
+            throw new Error('Vui lòng điền URL và Key của API tùy chỉnh trong phần cài đặt');
         }
         const prompt   = buildOutlinePrompt(userName, charName, viewSnap);
         const raw      = await callCustomApi(ctx, prompt, cfg, userName, charName, outlineAbortController.signal);
@@ -887,7 +881,7 @@ async function runGenerateOutline() {
         outlineAbortController = null;
         cachedOutline = html;
         if (outlineMode) setOutlineBody(html);
-        else showToast('Đã tạo đề cương, nhấp để xem', () => { if (!outlineMode) toggleOutlineMode(); showPanel(); });
+        else showToast('Đã tạo đề cương, nhấn để xem', () => { if (!outlineMode) toggleOutlineMode(); showPanel(); });
     } catch (err) {
         isGeneratingOutline = false;
         outlineAbortController = null;
@@ -903,51 +897,51 @@ async function runGenerateOutline() {
 
 function buildOutlinePrompt(userName, charName, perspective = 'user') {
     const subject = perspective === 'char' ? charName : userName;
-    return `Vui lòng tạm dừng nhập vai, dựa vào cốt truyện ở trên để tạo đề cương cho câu chuyện hiện tại với tư cách là cố vấn biên kịch.
-【Quan trọng】Tất cả đầu ra phải sử dụng tiếng Việt (có thể giữ nguyên ngôn ngữ gốc đối với tên người và địa danh).
+    return `Vui lòng tạm dừng đóng vai, với tư cách cố vấn biên kịch dựa trên cốt truyện trên, hãy tạo đề cương cho câu chuyện hiện tại.
+【Quan trọng】Mọi nội dung phải sử dụng tiếng Việt (tên người, địa danh có thể giữ nguyên gốc).
 
-【Bước 1: Phân tích cơ sở câu chuyện】
-Trước khi tạo các điểm mù/nút thắt, hãy làm rõ các nội dung sau trong phần bình luận (trên 300 từ):
-① Trạng thái hiện tại: Tình trạng hiện tại của các nhân vật chính (bao gồm ${subject} và các vai trò then chốt khác), mục tiêu của mỗi người và những mâu thuẫn chưa được giải quyết
-② Mối quan hệ chính phụ của nhân vật: Nhân vật chính cốt lõi, nhân vật phụ quan trọng, thế lực đối lập và sức nặng của họ trong cốt truyện
-③ Điểm nhấn tình cảm / Sức hút cốt lõi: Sức căng kịch tính hấp dẫn nhất trong câu chuyện này là gì? (Ví dụ: "Lợi dụng lẫn nhau nhưng nảy sinh tình cảm", "Cùng chống kẻ thù nhưng xung đột lý tưởng", "Cứu rỗi và được cứu rỗi")
-④ Hiện trạng và xu hướng phát triển của môi trường bên ngoài: Sự cân bằng quyền lực hiện tại, khủng hoảng xã hội, các sự kiện lớn sắp xảy ra, v.v., và hướng đi tự nhiên nếu không có sự can thiệp
-⑤ Mô hình cốt truyện: Đây là thể loại câu chuyện gì? Động lực bên trong là gì? (Ví dụ: "Đấu tranh sinh tồn dưới sự áp bức bên ngoài + tiến triển mối quan hệ bên trong" hoặc "Hành trình trả thù và cứu rỗi cá nhân")
-⑥ Tổng hợp tuyến truyện: Liệt kê ít nhất hai tuyến truyện - 【Tuyến chính】 (mục tiêu bên ngoài, nhiệm vụ, chống lại thế lực bên ngoài) và 【Tuyến tình cảm】 (sự thay đổi trong mối quan hệ tình cảm giữa các nhân vật chính). Nếu cần, có thể thêm tuyến phát triển cá nhân, tuyến đấu tranh quyền lực, v.v.
-⑦ Đặc điểm hành vi và phong cách ngôn ngữ của mỗi nhân vật chính, đảm bảo biểu hiện của nhân vật trong các điểm thắt phù hợp với thiết lập gốc
+【Bước 1: Phân tích nền tảng câu chuyện】
+Trước khi tạo các nút thắt, hãy tóm lược các nội dung sau trong phần chú thích (trên 300 chữ):
+① Trạng thái hiện tại: Tình hình hiện tại của các nhân vật chính (bao gồm ${subject} và các nhân vật then chốt khác), mục tiêu của mỗi người, các mâu thuẫn chưa được giải quyết.
+② Quan hệ chính phụ: Nhân vật chính yếu, nhân vật phụ quan trọng, thế lực đối lập và trọng số của họ trong cốt truyện.
+③ Điểm hấp dẫn/Sức hút cốt lõi: Căng thẳng kịch tính thu hút nhất trong câu chuyện này là gì? (ví dụ: "lợi dụng lẫn nhau nhưng nảy sinh tình cảm", "cùng chống kẻ thù nhưng bất đồng quan điểm", "cứu rỗi và được cứu rỗi")
+④ Hiện trạng và xu hướng môi trường bên ngoài: Cân bằng thế lực hiện tại, khủng hoảng xã hội, các sự kiện lớn sắp xảy ra, v.v., và diễn biến tự nhiên nếu không có sự can thiệp.
+⑤ Mô hình cốt truyện: Đây là loại câu chuyện gì? Động lực nội tại là gì? (ví dụ: "đấu tranh sinh tồn dưới áp lực bên ngoài + sự tiến hóa của các mối quan hệ nội bộ" hoặc "hành trình trả thù cá nhân và cứu rỗi")
+⑥ Tổng hợp các tuyến truyện: Liệt kê ít nhất hai tuyến truyện - 【Tuyến chính】(mục tiêu bên ngoài, nhiệm vụ, đối đầu thế lực ngoại lai) và 【Tuyến tình cảm】(thay đổi quan hệ tình cảm giữa các nhân vật chính). Nếu cần thiết có thể thêm tuyến phát triển cá nhân, tuyến đấu tranh thế lực, v.v.
+⑦ Đặc điểm hành vi và phong cách ngôn ngữ của các nhân vật chính, đảm bảo biểu hiện của nhân vật trong các nút thắt phù hợp với thiết lập gốc.
 
-【Bước 2: Tạo các điểm nút quan trọng, mục tiêu 8 điểm】
-Các điểm nút phải dựa trên phân tích ở trên, thể hiện mô hình cốt truyện mà bạn đã xác định.
-- Tuyến truyện cần phát triển theo hình xoắn ốc (tiến → lùi → lại tiến), không được phát triển theo đường thẳng.
-- Các điểm nút bao phủ toàn bộ vòng cung cốt truyện: Trạng thái mở đầu → Cọ xát/Thăm dò → Bước tiến đầu tiên → Thất bại/Lùi bước → Khủng hoảng bùng phát → Bước ngoặt quan trọng → Dư âm → Trạng thái cân bằng mới. Mỗi giai đoạn 1 điểm nút.
-- Nội dung Scene và Think của mỗi điểm nút phải phong phú, không nén chất lượng.
+【Bước 2: Tạo các nút thắt then chốt, mục tiêu 8 nút】
+Các nút thắt phải dựa trên phân tích nêu trên, thể hiện mô hình cốt truyện bạn đã xác định.
+- Tuyến truyện cần tiến triển theo hình xoắn ốc (tiến → lùi → tái tiến), không phát triển theo đường thẳng.
+- Các nút thắt bao quát toàn bộ vòng cung câu chuyện: Trạng thái mở đầu → Ma sát/Thăm dò → Tiến triển lần đầu → Thất bại/Rút lui → Khủng hoảng bùng phát → Bước ngoặt then chốt → Dư chấn → Cân bằng mới. Mỗi giai đoạn 1 nút thắt.
+- Nội dung Scene và Think của mỗi nút thắt phải phong phú, không nén chất lượng.
 
-【Yêu cầu tiêu đề】 Dưới 10 chữ, mang cảm giác có nguồn gốc văn học - từ câu thơ cổ có thật hoặc cải biên, lời bài hát có thật cải biên, hoặc câu thoại nổi tiếng trong tiểu thuyết/phim ảnh. Phong cách tiêu đề của các điểm nút không được giống hệt nhau, ít nhất mỗi loại thơ cổ/lời bài hát/tiểu thuyết phải dùng một lần. Không tự tạo ra các cụm từ văn vẻ không có nguồn gốc.
+【Yêu cầu tiêu đề】Dưới 10 chữ, mang cảm giác văn học - trích từ thơ văn cổ, lời bài hát thực tế hoặc danh ngôn tiểu thuyết/phim ảnh. Phong cách tiêu đề các nút thắt không được giống hệt nhau, ít nhất sử dụng thơ cổ/lời nhạc/tiểu thuyết mỗi loại một lần. Không tự tạo các cụm từ hoa mỹ không có nguồn gốc.
 
-【Giải thích trường dữ liệu】
-Beat: Thời gian suy diễn|Tiêu đề|Loại|Tuyến truyện tương ứng|Kết quả
-Scene: Điều gì thực sự đã xảy ra trong cảnh này (80-120 từ)
-Subtext: Câu nói mà ai đó chưa thốt ra trong cảnh này, hoặc cảm xúc ẩn chứa sau một hành động vô thức nào đó (không quá 40 từ)
-Think: Suy nghĩ sáng tác (100-150 từ), phải bao gồm:
- ① Cách thể hiện sức hút cốt lõi và mô hình cốt truyện
- ② Trạng thái tâm lý hiện tại của (ít nhất một) nhân vật chính
- ③ Tác dụng thúc đẩy đối với từng tuyến truyện
- ④ Đang ở vị trí nào trong quá trình tiến lùi xoắn ốc (so với điểm nút trước đó)
+【Giải thích các trường】
+Beat: Thời gian suy diễn|Tiêu đề|Loại|Tuyến truyện thuộc về|Kết quả
+Scene: Điều gì thực sự đã xảy ra trong cảnh này (80-120 chữ)
+Subtext: Câu nói chưa thốt ra hoặc cảm xúc ẩn giấu trong một hành động vô thức của ai đó trong cảnh này (không quá 40 chữ)
+Think: Suy nghĩ sáng tác (100-150 chữ), phải bao gồm:
+ ① Cách thể hiện sức hút cốt lõi và mô hình cốt truyện.
+ ② Trạng thái tâm lý của nhân vật chính (ít nhất một người) tại thời điểm này.
+ ③ Tác dụng thúc đẩy đối với các tuyến truyện.
+ ④ Đang ở vị trí nào trong tiến trình xoắn ốc (so với nút thắt trước đó).
 
-【Định dạng đầu ra (Tuân thủ nghiêm ngặt)】
+【Định dạng đầu ra (tuân thủ nghiêm ngặt)】
 <outline_widget>
-Beat: Thời gian suy diễn|Tiêu đề|Loại|Tuyến truyện tương ứng|Kết quả
+Beat: Thời gian suy diễn|Tiêu đề|Loại|Tuyến truyện thuộc về|Kết quả
 Scene: …
 Subtext: …
 Think: …
-(Tổng cộng 8 điểm nút, mỗi điểm nút lặp lại cấu trúc trên)
+(Tổng cộng 8 nút thắt, mỗi nút lặp lại cấu trúc trên)
 </outline_widget>`;}
 
-// ─── Phân tích / Render Outline ───────────────────────────────────────────────────
+// ─── Phân tích / Hiển thị đề cương ───────────────────────────────────────────────────
 
 function parseOutline(raw) {
     const m = raw.match(/<outline_widget[^>]*>([\s\S]*?)<\/outline_widget>/i);
-    const content = m ? m[1] : raw;  // fallback: phân tích chuỗi thô trực tiếp nếu không có thẻ widget
+    const content = m ? m[1] : raw;  // dự phòng: phân tích trực tiếp nếu không có thẻ widget
     const beats = []; let cur = null;
     for (const line of content.split('\n')) {
         const t = line.trim();
@@ -981,7 +975,7 @@ function renderOutline(raw) {
     const beats = parseOutline(raw);
     if (beats.length === 0) return `<div class="sp-raw">${escapeHtml(raw).replace(/\n/g, '<br>')}</div>`;
     return beats.map((b, i) => {
-        const injectParts = [`【Tham khảo điểm nút cốt truyện】`, `${b.time}·《${b.title}》${b.type ? '·' + b.type : ''}${b.line ? '（' + b.line + '）' : ''}`];
+        const injectParts = [`【Tham khảo nút thắt cốt truyện】`, `${b.time}·《${b.title}》${b.type ? '·' + b.type : ''}${b.line ? '（' + b.line + '）' : ''}`];
         if (b.scene)   injectParts.push(b.scene);
         if (b.outcome) injectParts.push(`Kết quả: ${b.outcome}`);
         const injectBtn = makeInjectBtn(injectParts.join('\n'));
@@ -1003,53 +997,52 @@ function renderOutline(raw) {
     }).join('');
 }
 
-
 function buildPrompt(userName, charName, perspective = 'user') {
     const subject   = perspective === 'char' ? charName : userName;
     const companion = perspective === 'char' ? userName : charName;
-    return `Vui lòng tạm dừng nhập vai, dựa trên cốt truyện ở trên để tạo lịch trình cho ${subject} dưới góc nhìn của người quan sát.
-【Quan trọng】Tất cả đầu ra phải sử dụng tiếng Việt (có thể giữ nguyên ngôn ngữ gốc đối với tên người và địa danh).
+    return `Vui lòng tạm dừng đóng vai, với tư cách người quan sát dựa trên cốt truyện trên, hãy tạo lịch trình cho ${subject}.
+【Quan trọng】Mọi nội dung phải sử dụng tiếng Việt (tên người, địa danh có thể giữ nguyên gốc).
 
-Các sự kiện được chia thành ba loại:
-- main (Tuyến chính): Các sự kiện mà ${subject} trực tiếp tham gia và đang thúc đẩy
-- hidden (Tuyến ẩn): Những manh mối ngầm, những hướng đi chưa được giải quyết
-- bond (Tuyến tình cảm): Các sự kiện có thể xảy ra hoặc làm sâu sắc thêm mối quan hệ giữa ${subject} và ai đó (không giới hạn ở ${companion}, có thể là bất kỳ nhân vật quan trọng nào)
+Các sự kiện chia làm 3 loại:
+- main (tuyến sáng): Các sự kiện ${subject} trực tiếp tham gia hoặc đang thúc đẩy.
+- hidden (tuyến tối): Các phục bút ngầm, các diễn biến chưa có lời giải.
+- bond (tuyến hồng): Các sự kiện có thể xảy ra hoặc làm sâu sắc thêm quan hệ giữa ${subject} và ai đó (không giới hạn ở ${companion}, có thể là bất kỳ nhân vật quan trọng nào).
 
-${subject} và ${companion} đều có cuộc sống độc lập của riêng họ, các sự kiện có thể liên quan đến bất kỳ NPC và bên thứ ba nào, không nhất thiết mỗi mục đều phải xoay quanh sự tương tác của cả hai.
+Cả ${subject} và ${companion} đều có cuộc sống độc lập riêng, các sự kiện có thể liên quan đến bất kỳ NPC hoặc bên thứ ba nào, không nhất thiết mọi mục đều phải xoay quanh sự tương tác giữa hai người.
 
-Ngày 1-3 mỗi ngày tạo từ 1 đến 3 sự kiện; khối Tương lai (Future) tạo từ 5 đến 10 sự kiện, không giới hạn khoảng thời gian.
+Ngày 1-3 mỗi ngày tạo từ 1 đến 3 sự kiện; khối Future (Tương lai) tạo từ 5 đến 10 sự kiện, không giới hạn khoảng thời gian.
 
-【Giải thích trường dữ liệu】
-Định dạng: Event: type|title|description|time|location|Động thái manh mối
+【Giải thích các trường】
+Định dạng: Event: type|title|description|time|location|diễn biến liên đới
 - type chỉ có thể là main / hidden / bond
-- description: Dưới góc nhìn của ${subject}, giọng điệu đời thường, trên 30 từ
-- Động thái manh mối: Các động thái cùng thời điểm của những nhân vật khác liên quan đến sự kiện này, có thể là bất kỳ NPC hoặc bên thứ ba nào, trên 30 từ; nếu không có nhân vật liên quan có thể để trống
+- description: Góc nhìn của ${subject}, giọng điệu đời thường, trên 30 chữ.
+- diễn biến liên đới: Diễn biến đồng thời của các nhân vật khác liên quan đến sự kiện này, có thể là bất kỳ NPC hoặc bên thứ ba nào, trên 30 chữ; nếu không có nhân vật liên quan có thể để trống.
 
-【Giải thích về ngày tháng】
-Ngày 1 (Day 1) nên bắt đầu từ mốc thời gian hiện tại của cốt truyện và suy diễn về sau. Nếu có thể suy luận rõ ràng ngày hiện tại từ cốt truyện thì điền StartDate, nếu không thì bỏ qua. Đừng điền lùi lại những ngày đã qua, Ngày 1 phải là thời điểm "hiện tại" của cốt truyện hoặc thời gian sau đó.
+【Giải thích ngày tháng】
+Ngày 1 nên bắt đầu từ mốc thời gian hiện tại của cốt truyện, suy diễn về sau. Nếu có thể suy đoán rõ ràng ngày hiện tại từ cốt truyện thì điền StartDate, nếu không thì bỏ qua. Không điền lại các ngày đã xảy ra, Ngày 1 phải là thời gian "hiện tại" hoặc sau đó trong cốt truyện.
 
-【Định dạng đầu ra (Tuân thủ nghiêm ngặt, chỉ xuất ra cấu trúc dưới đây)】
+【Định dạng đầu ra (tuân thủ nghiêm ngặt, chỉ xuất cấu trúc sau)】
 <calendar_widget>
-StartDate: YYYY-MM-DD (Điền nếu có thể suy luận từ cốt truyện, nếu không bỏ qua dòng này)
+StartDate: YYYY-MM-DD (Điền nếu suy đoán được từ cốt truyện, nếu không hãy bỏ qua dòng này)
 Day: 1
-Event: type|title|description|time|location|Động thái manh mối
-Event: type|title|description|time|location|Động thái manh mối
+Event: type|title|description|time|location|diễn biến liên đới
+Event: type|title|description|time|location|diễn biến liên đới
 Day: 2
-Event: type|title|description|time|location|Động thái manh mối
-Event: type|title|description|time|location|Động thái manh mối
+Event: type|title|description|time|location|diễn biến liên đới
+Event: type|title|description|time|location|diễn biến liên đới
 Day: 3
-Event: type|title|description|time|location|Động thái manh mối
-Event: type|title|description|time|location|Động thái manh mối
+Event: type|title|description|time|location|diễn biến liên đới
+Event: type|title|description|time|location|diễn biến liên đới
 Future:
-Event: type|title|description|time|location|Động thái manh mối
+Event: type|title|description|time|location|diễn biến liên đới
 </calendar_widget>
 
-【Giải thích về khối Future】
-Khối Future bao gồm các mục tương lai xuất hiện trong cốt truyện, không giới hạn thời gian.
-Cho phép suy đoán hợp lý dựa trên hướng đi của cốt truyện, nhưng không được bịa đặt vô căn cứ về những thỏa thuận hoặc lời hứa chưa từng được đề cập trong cốt truyện.`;
+【Giải thích Future】
+Khối Future ghi lại các vấn đề tương lai xuất hiện trong cốt truyện, thời gian không giới hạn.
+Cho phép suy đoán hợp lý dựa trên diễn biến cốt truyện, nhưng không được bịa đặt các cuộc hẹn hoặc lời hứa chưa từng được nhắc đến trong câu chuyện.`;
 }
 
-// ─── Cài đặt ─────────────────────────────────────────────────────────────────
+// ─── Cài đặt (Settings) ─────────────────────────────────────────────────────────────────
 
 async function fetchModels() {
     const url = $('#sp-cfg-url').val().trim().replace(/\/$/, '');
@@ -1067,7 +1060,7 @@ async function fetchModels() {
         const models = (data.data || data.models || [])
             .map(m => (typeof m === 'string' ? m : m.id))
             .filter(Boolean).sort();
-        if (!models.length) throw new Error('API không trả về bất kỳ model nào');
+        if (!models.length) throw new Error('Giao diện không trả về bất kỳ mô hình nào');
 
         const current = loadCfg().model || '';
         const opts = models.map(m =>
@@ -1077,9 +1070,9 @@ async function fetchModels() {
             `<select id="sp-cfg-model" class="sp-input sp-model-input">${opts}</select>`
         );
         if (!current) $('#sp-cfg-model').val(models[0]);
-        showToast(`Đã tải ${models.length} model`);
+        showToast(`Đã tải ${models.length} mô hình`);
     } catch (err) {
-        showToast(`Lấy model thất bại: ${err.message}`, null, true);
+        showToast(`Lấy danh sách mô hình thất bại: ${err.message}`, null, true);
     } finally {
         $btn.prop('disabled', false).html('<i class="fa-solid fa-list"></i>');
     }
@@ -1115,8 +1108,8 @@ function saveSettings() {
         .removeClass('sp-notice-ok sp-notice-warn')
         .addClass(hasApi ? 'sp-notice-ok' : 'sp-notice-warn')
         .html(`<i class="fa-solid ${hasApi ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i>
-            ${hasApi ? 'Đã cấu hình API độc lập, quá trình tạo chạy ngầm không ảnh hưởng đến trò chuyện'
-                     : 'Chưa cấu hình API độc lập: Quá trình tạo sẽ <b>chiếm dụng kênh trò chuyện</b>'}`);
+            ${hasApi ? 'Đã cấu hình API riêng, việc tạo ngầm không ảnh hưởng đến trò chuyện'
+                     : 'Chưa cấu hình API riêng: Trong lúc tạo sẽ <b>chiếm dụng kênh chat</b>'}`);
     setTimeout(() => { if (settingsOpen) toggleSettings(); }, 400);
 }
 
@@ -1160,19 +1153,17 @@ function toggleTheme() {
     localStorage.setItem(THEME_KEY, currentTheme);
 }
 
-// ─── Kéo ─────────────────────────────────────────────────────────────────────
+// ─── Kéo thả (Drag) ─────────────────────────────────────────────────────────────────────
 
 function onDragStart(e) {
     if ($(e.target).closest('.sp-icon-btn, .sp-view-btn').length) return;
     e.preventDefault();
     const sheet = document.querySelector(`#${MODAL_ID} .sp-sheet`);
 
-    // Dịch chuyển từ định dạng CSS-transform sang tọa độ px cụ thể cho việc tính toán kéo.
-    // PHẢI hủy CSS animation trước — fill-mode của animation có độ ưu tiên cao hơn
-    // các kiểu nội tuyến, vì vậy transform:'none' đơn thuần sẽ không ghi đè được nó.
+    // Chuyển từ căn giữa bằng CSS-transform sang tọa độ px cụ thể để tính toán kéo thả.
     if (sheet.style.transform !== 'none') {
-        sheet.style.animation = 'none';           // hủy bỏ fill-mode translateX(-50%)
-        const snap = sheet.getBoundingClientRect(); // đọc khi CSS transform vẫn còn hoạt động
+        sheet.style.animation = 'none';           
+        const snap = sheet.getBoundingClientRect(); 
         sheet.style.transform = 'none';
         sheet.style.right     = 'auto';
         sheet.style.left      = snap.left + 'px';
@@ -1181,7 +1172,7 @@ function onDragStart(e) {
 
     const cx   = e.touches ? e.touches[0].clientX : e.clientX;
     const cy   = e.touches ? e.touches[0].clientY : e.clientY;
-    const rect = sheet.getBoundingClientRect(); // đọc SAU KHI dịch chuyển
+    const rect = sheet.getBoundingClientRect(); 
     dragState  = { startX: cx, startY: cy, origLeft: rect.left, origTop: rect.top };
 
     $(document).on('mousemove.spdrag', onDragMove).on('mouseup.spdrag', onDragEnd);
@@ -1217,7 +1208,7 @@ function onDragEnd() {
     $('#sp-drag-handle').css('cursor', 'grab');
 }
 
-// ─── Resize ───────────────────────────────────────────────────────────────────
+// ─── Thay đổi kích thước (Resize) ───────────────────────────────────────────────────────────────────
 
 function onResizeStart(e) {
     e.preventDefault();
@@ -1339,7 +1330,7 @@ function syncMobileViewport() {
     sheet.style.maxHeight = `${maxH}px`;
 }
 
-// ─── Toast (Thông báo nổi) ──────────────────────────────────────────────────────────────
+// ─── Thông báo (Toast - ở phía trên) ──────────────────────────────────────────────
 
 function injectToastContainer() {
     if (!$('#sp-toast-wrap').length) document.documentElement.insertAdjacentHTML('beforeend', '<div id="sp-toast-wrap"></div>');
@@ -1356,12 +1347,12 @@ function showToast(msg, onClick, isError = false) {
     setTimeout(() => { $t.removeClass('sp-toast-show'); setTimeout(() => $t.remove(), 350); }, 4000);
 }
 
-// ─── Rendering ────────────────────────────────────────────────────────────────
+// ─── Kết xuất nội dung (Rendering) ────────────────────────────────────────────────────────────────
 
 const TYPE_META = {
-    main  : { icon: 'fa-bolt',      label: 'Tuyến chính', cls: 'sp-type-world'     },
-    hidden: { icon: 'fa-eye-slash', label: 'Tuyến ẩn', cls: 'sp-type-major'     },
-    bond  : { icon: 'fa-heart',     label: 'Tuyến tình cảm', cls: 'sp-type-character' },
+    main  : { icon: 'fa-bolt',      label: 'Tuyến sáng', cls: 'sp-type-world'     },
+    hidden: { icon: 'fa-eye-slash', label: 'Tuyến tối', cls: 'sp-type-major'     },
+    bond  : { icon: 'fa-heart',     label: 'Tuyến hồng', cls: 'sp-type-character' },
 };
 
 function renderSchedule(raw, userName, perspective = 'user') {
@@ -1374,8 +1365,8 @@ function renderSchedule(raw, userName, perspective = 'user') {
     const chipCls   = perspective === 'char' ? 'sp-char-chip' : 'sp-user-chip';
 
     const header = `<div class="sp-schedule-header">
-        <span class="sp-schedule-label">Lịch trình của </span>
         <span class="${chipCls}">${escapeHtml(userName)}</span>
+        <span class="sp-schedule-label"> của lịch trình</span>
     </div>`;
 
     const tabs = days.map((_, i) => {
@@ -1425,4 +1416,64 @@ function parseCalendar(raw) {
     const days = []; let cur = null; let inFuture = false; let future = null;
     for (const line of content.split('\n')) {
         const t = line.trim();
-        if (!t || t.startsWith('
+        if (!t || t.startsWith('<!--')) continue;
+        if (/^Day\s*:?\s*\d+/i.test(t) || /^第[一二三四五六七\d]+天/.test(t)) {
+            if (cur && !inFuture) days.push(cur);
+            cur = { events: [] }; inFuture = false; continue;
+        }
+        if (/^Future\s*:/i.test(t) || /^未来\s*:/i.test(t)) {
+            if (cur && !inFuture) days.push(cur);
+            future = { events: [] }; cur = future; inFuture = true; continue;
+        }
+        if (/^Event\s*:/i.test(t)) {
+            if (!cur) cur = { events: [] };
+            const parts = t.replace(/^Event\s*:\s*/i, '').split('|');
+            if (parts.length >= 4) cur.events.push({
+                type: (parts[0]||'user').trim().toLowerCase(), title: (parts[1]||'').trim(),
+                desc: (parts[2]||'').trim(), time: (parts[3]||'').trim(),
+                location: (parts[4]||'').trim(), npcAction: (parts[5]||'').trim(),
+            });
+        }
+    }
+    if (cur && !inFuture) days.push(cur);
+    return { days: days.filter(d => d.events.length > 0), future, startDate };
+}
+
+function renderEvent(ev) {
+    const meta = TYPE_META[ev.type] || TYPE_META.main;
+    const injectParts = ['【日程参考】'];
+    if (ev.time) injectParts.push(`时间：${ev.time}`);
+    injectParts.push(ev.title);
+    if (ev.desc)      injectParts.push(ev.desc);
+    if (ev.location)  injectParts.push(`地点：${ev.location}`);
+    if (ev.npcAction) injectParts.push(`线头：${ev.npcAction}`);
+    const injectBtn = makeInjectBtn(injectParts.join('\n'));
+    return `<div class="sp-event ${meta.cls}">
+        <div class="sp-event-head">
+            <span class="sp-type-badge"><i class="fa-solid ${meta.icon}"></i>${escapeHtml(meta.label)}</span>
+            <span class="sp-event-title">${escapeHtml(ev.title)}</span>
+            ${ev.time ? `<span class="sp-event-time"><i class="fa-regular fa-clock"></i> ${escapeHtml(ev.time)}</span>` : ''}
+            ${injectBtn}
+        </div>
+        ${ev.desc ? `<p class="sp-event-desc">${escapeHtml(ev.desc)}</p>` : ''}
+        <div class="sp-event-meta">
+            ${ev.location  ? `<span class="sp-event-loc"><i class="fa-solid fa-location-dot"></i>${escapeHtml(ev.location)}</span>` : ''}
+            ${ev.npcAction ? `<span class="sp-event-npc"><i class="fa-solid fa-link"></i>${escapeHtml(ev.npcAction)}</span>` : ''}
+        </div>
+    </div>`;
+}
+
+function escapeHtml(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escapeAttr(s)  { return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function cleanText(s) {
+    return String(s)
+        .replace(/<ruby[^>]*>[\s\S]*?<\/ruby>/gi, (m) =>
+            m.replace(/<rt[^>]*>[\s\S]*?<\/rt>/gi, '').replace(/<\/?ruby[^>]*>/gi, ''))
+        .replace(/<rt[^>]*>[\s\S]*?<\/rt>/gi, '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/\*(.+?)\*/g, '$1')
+        .replace(/_{1,2}(.+?)_{1,2}/g, '$1')
+        .replace(/~~(.+?)~~/g, '$1')
+        .replace(/`([^`]+)`/g, '$1')
+        .trim();
